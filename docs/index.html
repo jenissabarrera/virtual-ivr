@@ -1,0 +1,134 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <!-- <script type="text/javascript" src="./scripts/ivr.js"> </script> -->
+  <script src='https://code.jquery.com/jquery-3.3.1.min.js'
+    integrity='sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=' crossorigin='anonymous'></script>
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/51.0.0/purecloud-platform-client-v2.min.js"></script>
+</head>
+
+<body>
+  <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
+    <label>Flow:</label>
+    <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
+      <option value="inboundcall">Inbound Call</option>
+      <option value="outboundcall">Outbound Call</option>
+      <option value="inqueuecall">In-Queue Call</option>
+      <option value="securecall">Secure Call</option>
+      <option value="inboundchat">Inbound Chat</option>
+      <option value="inboundemail">Inbound Email</option>
+      <option value="inboundshortmessage">Inbound Message</option>
+      <option value="surveyinvite">Survey Invite</option>
+    </select>
+
+    <div id="divFlow" hidden>
+      <label>Select Flow Name:</label>
+      <select style="width:auto" id="flowNames">
+        <!-- <option value="inboundcall">Inbound Call</option>
+        <option value="outboundcall">Outbound Call</option>
+        <option value="inqueuecall">In-Queue Call</option>
+        <option value="securecall">Secure Call</option>
+        <option value="inboundchat">Inbound Chat</option>
+        <option value="inboundemail">Inbound Email</option>
+        <option value="inboundshortmessage">Inbound Message</option>
+        <option value="surveyinvite">Survey Invite</option> -->
+      </select>
+    </div>
+  </div>
+
+
+</body>
+
+
+
+</html>
+
+
+<script>
+  const clientId = '83d37bf5-e050-47bf-9937-0314b259c9c4';
+  const redirectUri = window.location.href;
+
+  // Set purecloud objects
+  const platformClient = require('platformClient');
+  const client = platformClient.ApiClient.instance;
+  const architectApi = new platformClient.ArchitectApi();
+
+  // Set PureCloud settings
+  client.setEnvironment('mypurecloud.com');
+
+  // cache purecloud credentials to browser
+  // client.setPersistSettings(true, 'test_app');
+
+  //Authenticate with Purecloud
+  $(document).ready(() => {
+    client.loginImplicitGrant(clientId, redirectUri)
+      .then(() => {
+        console.log('Logged in');
+        let token = client.authData.accessToken;
+
+        // send token to body
+        $.post('http://localhost:3000/gettoken', {
+          token: token
+        });
+      })
+
+      .catch((err) => console.error(err));
+
+  });
+
+
+  function getArchitectFlows() {
+
+    let selectedFlow = document.getElementById("architectFlow").value;
+
+    let opts = {
+      type: [selectedFlow],
+      pageNumber: 1,
+      pageSize: 1000
+
+    };
+
+    architectApi.getFlows(opts)
+      .then((data) => {
+        console.log(`getFlows success! data: ${JSON.stringify(data, null, 2)}`);
+        populateDropdown(data);
+      })
+      .catch((err) => {
+        console.log('There was a failure calling getFlows');
+        console.error(err);
+      });
+
+  }
+
+
+  function populateDropdown(data) {
+
+    // for (flows of data.entities) {
+    //   console.log("test options:" + JSON.stringify(flows));
+    //   // listObjects = Object.assign(listObjects, flows);
+    // }
+
+    // get value of data
+    let map = new Map(Object.entries(data));
+
+    let final = map.get('entities');
+
+    console.log(JSON.stringify(final[0]));
+
+    //  let last = Object.assign({}, final);
+
+
+    //  console.log(JSON.stringify(last));
+
+    showDropdown();
+
+  }
+
+  function showDropdown() {
+
+    let divShow = document.getElementById("divFlow");
+    divShow.style.display = "block";
+
+  }
+</script>
