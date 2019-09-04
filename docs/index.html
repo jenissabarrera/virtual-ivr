@@ -2,10 +2,9 @@
 
 <head>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-  <!-- <script type="text/javascript" src="./scripts/ivr.js"> </script> -->
   <script src='https://code.jquery.com/jquery-3.3.1.min.js'
     integrity='sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=' crossorigin='anonymous'></script>
-  <script src="https://sdk-cdn.mypurecloud.com/javascript/51.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/55.0.0/purecloud-platform-client-v2.min.js"></script>
 </head>
 
 <body>
@@ -24,23 +23,11 @@
 
     <div id="divFlow" hidden>
       <label>Select Flow Name:</label>
-      <select style="width:auto" id="flowNames">
-        <!-- <option value="inboundcall">Inbound Call</option>
-        <option value="outboundcall">Outbound Call</option>
-        <option value="inqueuecall">In-Queue Call</option>
-        <option value="securecall">Secure Call</option>
-        <option value="inboundchat">Inbound Chat</option>
-        <option value="inboundemail">Inbound Email</option>
-        <option value="inboundshortmessage">Inbound Message</option>
-        <option value="surveyinvite">Survey Invite</option> -->
+      <select style="width:auto" id="flowNames" onchange="changeOptions()">
       </select>
     </div>
   </div>
-
-
 </body>
-
-
 
 </html>
 
@@ -50,9 +37,13 @@
   const redirectUri = window.location.href;
 
   // Set purecloud objects
+  // const platformClient = require('purecloud-platform-client-v2');
   const platformClient = require('platformClient');
   const client = platformClient.ApiClient.instance;
   const architectApi = new platformClient.ArchitectApi();
+
+  // Require in the PureCloud Architect Scripting SDK
+  // const architectScripting     = require('purecloud-flow-scripting-api-sdk-javascript');
 
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
@@ -90,9 +81,9 @@
     };
 
     architectApi.getFlows(opts)
-      .then((data) => {
-        console.log(`getFlows success! data: ${JSON.stringify(data, null, 2)}`);
-        populateDropdown(data);
+      .then((getFlowsdata) => {
+        console.log(`getFlows success! data: ${JSON.stringify(getFlowsdata, null, 2)}`);
+        populateDropdown(getFlowsdata);
       })
       .catch((err) => {
         console.log('There was a failure calling getFlows');
@@ -101,26 +92,39 @@
 
   }
 
+  // Populate dropdown list
+  function populateDropdown(getFlowsdata) {
 
-  function populateDropdown(data) {
+    document.getElementById("flowNames").innerHTML = "";
 
-    // for (flows of data.entities) {
-    //   console.log("test options:" + JSON.stringify(flows));
-    //   // listObjects = Object.assign(listObjects, flows);
-    // }
+    // Convert array to map to access values inside the array
+    let mapSelectedFlow = new Map(Object.entries(getFlowsdata));
 
-    // get value of data
-    let map = new Map(Object.entries(data));
+    // Store values of entities object to a variable
+    let entities = mapSelectedFlow.get('entities');
 
-    let final = map.get('entities');
+    // Call function createoptions
+    entities.forEach(createOptions);
+  }
 
-    console.log(JSON.stringify(final[0]));
+  function changeOptions() {
 
-    //  let last = Object.assign({}, final);
+    let flows = document.getElementById("flowNames");
+    let value = flows.options[flows.selectedIndex].value;
+    console.log("Selected flow ID:" + value);
 
+  }
 
-    //  console.log(JSON.stringify(last));
+  // Function to create options
+  function createOptions(item) {
 
+    let name = document.getElementById("flowNames");
+    let option = document.createElement("option");
+    option.text = item.name;
+    option.value = item.id;
+    name.add(option);
+
+    console.log(option);
     showDropdown();
 
   }
@@ -131,4 +135,34 @@
     divShow.style.display = "block";
 
   }
+
+
+
+  //   // Architect Scripting stuff
+  // const architectScripting = require('purecloud-flow-scripting-api-sdk-javascript');
+  // const platformApi        = require('purecloud-platform-client-v2');
+
+  // const clientId1           = '751ad006-d414-44af-9787-f1f511bd9487';
+  // const clientSecret       = 'CXZG6tmDOUm-aQDLJHp7VBU2c2X5IvPgcr461VyLwTc';
+
+
+  // const archEnums          = architectScripting.enums.archEnums;
+  // const archSession        = architectScripting.environment.archSession;
+  // const platformApiClient  = platformApi.ApiClient.instance;
+
+  // function doWork(session) {
+
+  // // Once the session starts you can do this to assign the authToken from
+  // // the Architect session object to the platform API client.
+  // platformApiClient.setAccessToken(session.authToken);
+  // console.log(session.authToken);
+
+  // // Now you can make calls using the PureCloud Platform client calls as well
+  // // as well as Architect Scripting calls because we've assigned the autorization
+  // // token.  :)
+
+  // }
+
+  // // This will start off the Architect Scripting code and call the doWork function
+  // archSession.startWithClientIdAndSecret(archEnums.LOCATIONS.prod_us_east_1, doWork, clientId1, clientSecret);
 </script>
