@@ -2,6 +2,9 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
+//declare other files
+const ivr = require('./docs/scripts/ivr.js');
+
 
 // Routes
 app.get('/', function (req, res) {
@@ -15,10 +18,20 @@ app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 
 app.post('/gettoken', function (req, res) {
-    console.log(req.body);
+    console.log("token:" + req.body);
+    let initialToken = req.body;
+    // ivr.assignToken(initialToken);
+});
+
+app.post('/getflowid', function (req, res){
+
+let flowId = req.body.assignToken;
+console.log("res" +JSON.stringify(flowId));
+ivr.assignToken(flowId);
 });
 
 
 // Port Listen
 app.listen(3000);
 console.log("Running...");
+

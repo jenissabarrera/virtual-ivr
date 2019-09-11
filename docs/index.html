@@ -4,6 +4,8 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
   <script src='https://code.jquery.com/jquery-3.3.1.min.js'
     integrity='sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=' crossorigin='anonymous'></script>
+  <script type="text/javascript" src="./scripts/ivr.js"> </script>
+  <script type="text/javascript" src="./scripts/scripting-sample.js"> </script>
   <script src="https://sdk-cdn.mypurecloud.com/javascript/55.0.0/purecloud-platform-client-v2.min.js"></script>
 </head>
 
@@ -11,7 +13,7 @@
   <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
     <label>Flow:</label>
     <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
-      <option value="inboundcall">Inbound Call</option>
+      <option value="inboundcall">Inbound Call</option>`
       <option value="outboundcall">Outbound Call</option>
       <option value="inqueuecall">In-Queue Call</option>
       <option value="securecall">Secure Call</option>
@@ -36,14 +38,16 @@
   const clientId = '83d37bf5-e050-47bf-9937-0314b259c9c4';
   const redirectUri = window.location.href;
 
+
+
   // Set purecloud objects
   // const platformClient = require('purecloud-platform-client-v2');
   const platformClient = require('platformClient');
   const client = platformClient.ApiClient.instance;
   const architectApi = new platformClient.ArchitectApi();
+  const oAuthApi = new platformClient.OAuthApi();
 
-  // Require in the PureCloud Architect Scripting SDK
-  // const architectScripting     = require('purecloud-flow-scripting-api-sdk-javascript');
+  
 
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
@@ -66,7 +70,7 @@
 
       .catch((err) => console.error(err));
 
-  });
+  })
 
 
   function getArchitectFlows() {
@@ -112,6 +116,10 @@
     let flows = document.getElementById("flowNames");
     let value = flows.options[flows.selectedIndex].value;
     console.log("Selected flow ID:" + value);
+    // send token to body
+    $.post('http://localhost:3000/getflowid', {
+          flowid: value
+        });
 
   }
 
@@ -137,32 +145,4 @@
   }
 
 
-
-  //   // Architect Scripting stuff
-  // const architectScripting = require('purecloud-flow-scripting-api-sdk-javascript');
-  // const platformApi        = require('purecloud-platform-client-v2');
-
-  // const clientId1           = '751ad006-d414-44af-9787-f1f511bd9487';
-  // const clientSecret       = 'CXZG6tmDOUm-aQDLJHp7VBU2c2X5IvPgcr461VyLwTc';
-
-
-  // const archEnums          = architectScripting.enums.archEnums;
-  // const archSession        = architectScripting.environment.archSession;
-  // const platformApiClient  = platformApi.ApiClient.instance;
-
-  // function doWork(session) {
-
-  // // Once the session starts you can do this to assign the authToken from
-  // // the Architect session object to the platform API client.
-  // platformApiClient.setAccessToken(session.authToken);
-  // console.log(session.authToken);
-
-  // // Now you can make calls using the PureCloud Platform client calls as well
-  // // as well as Architect Scripting calls because we've assigned the autorization
-  // // token.  :)
-
-  // }
-
-  // // This will start off the Architect Scripting code and call the doWork function
-  // archSession.startWithClientIdAndSecret(archEnums.LOCATIONS.prod_us_east_1, doWork, clientId1, clientSecret);
 </script>
