@@ -4,18 +4,25 @@
 // --------------------------------------------------------------------------------
 const architectScripting = require('purecloud-flow-scripting-api-sdk-javascript');
 const platformApi        = require('purecloud-platform-client-v2');
+const archEnums          = architectScripting.enums.archEnums;
 
 // --------------------------------------------------------------------------------
 // Helpers to make sample code more readable.
 // --------------------------------------------------------------------------------
-const archEnums          = architectScripting.enums.archEnums;
+const scriptingActionFactory = architectScripting.factories.archFactoryActions; // Factory to create actions
+const scriptingEnums         = architectScripting.enums.archEnums;              // Enum support
+const scriptingFlowFactory   = architectScripting.factories.archFactoryFlows;   // Factory to create flows
+const scriptingLanguages     = architectScripting.languages.archLanguages;      // Language support
 const scriptingSession       = architectScripting.environment.archSession;      // Session support
-const platformApiClient  = platformApi.ApiClient.instance;
-const scriptingFlowFactory   = architectScripting.factories.archFactoryFlows;
-const scriptingEnums         = architectScripting.enums.archEnums;    
+const scriptingTaskFactory   = architectScripting.factories.archFactoryTasks;   // Factory to create tasks
+const scriptingLogger        = architectScripting.services.archLogging;         // Logging support
+
+scriptingLogger.logNotesVerbose = true;
 
 const clientId1 = '751ad006-d414-44af-9787-f1f511bd9487';
 const clientSecret = 'CXZG6tmDOUm-aQDLJHp7VBU2c2X5IvPgcr461VyLwTc'
+
+let flowid = "";
 
 // --------------------------------------------------------------------------------
 // This function will be what is called by Architect Scripting since it is
@@ -35,18 +42,20 @@ function doWork(session) {
 }
 
 
-function assignToken(flowid){
-    // console.log("This is the working token:" + JSON.stringify(token));
-    // let modifiedToken = JSON.stringify(token);
-    // archSession.startWithAuthToken(archEnums.LOCATIONS.prod_us_east_1, openFlow, modifiedToken)
-    scriptingSession.startWithClientIdAndSecret(archEnums.LOCATIONS.prod_us_east_1, openFlow(flowid), clientId1, clientSecret);
+function assignToken(id){
+
+    flow = "85f6e5be-1a92-42dd-a01f-b40cd125e89a";
+    // console.log('id in ivr' + JSON.stringify(id));
+    flowid = id.flowid;
+    console.log('flowflow' + flowid);
+    scriptingSession.startWithClientIdAndSecret(archEnums.LOCATIONS.prod_us_east_1, openFlow, clientId1, clientSecret);
+    // scriptingSession.startWithClientIdAndSecret(archEnums.LOCATIONS.prod_us_east_1, openFlow(flow), clientId1, clientSecret);
 }
 
-function openFlow(scriptSession,flowid){
-
-    console.log("this is flow id!");
-  let flowId = JSON.stringify(flowid);
-  return scriptingFlowFactory.getFlowInfoByFlowIdAsync(flowId, scriptingEnums.FLOW_TYPES.inboundCall,function(ArchBaseFlowInfoBasic) {
+function openFlow(scriptSession){
+    // console.log("this is flow id!" + flowid);
+//   let flowId = JSON.stringify(flow);
+  scriptingFlowFactory.getFlowInfoByFlowIdAsync(flowid, scriptingEnums.FLOW_TYPES.inboundCall,function(ArchBaseFlowInfoBasic) {
       console.log('------------------------------------------------------')
       console.log('THIS IS NAME:' + ArchBaseFlowInfoBasic.name)
       console.log('------------------------------------------------------')
@@ -55,9 +64,6 @@ function openFlow(scriptSession,flowid){
   
 }
 
- 
-// This will start off the Architect Scripting code and call the doWork function
-// archSession.startWithClientIdAndSecret(archEnums.LOCATIONS.prod_us_east_1, doWork, clientId, clientSecret);
 
 
 

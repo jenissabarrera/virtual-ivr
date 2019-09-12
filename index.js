@@ -18,15 +18,15 @@ app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 
 app.post('/gettoken', function (req, res) {
-    console.log("token:" + req.body);
-    let initialToken = req.body;
-    // ivr.assignToken(initialToken);
+   
+
 });
 
 app.post('/getflowid', function (req, res){
 
-let flowId = req.body.assignToken;
-console.log("res" +JSON.stringify(flowId));
+// let flowId = req.body.assignToken;
+console.log("res" +JSON.stringify(req.body));
+let flowId = req.body;
 ivr.assignToken(flowId);
 });
 
