@@ -4,24 +4,17 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
   <script src='https://code.jquery.com/jquery-3.3.1.min.js'
     integrity='sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=' crossorigin='anonymous'></script>
-  <script type="text/javascript" src="./scripts/ivr.js"> </script>
-  <script type="text/javascript" src="./scripts/scripting-sample.js"> </script>
   <script src="https://sdk-cdn.mypurecloud.com/javascript/55.0.0/purecloud-platform-client-v2.min.js"></script>
 </head>
 
 <body>
   <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
+    
+    <div id = "divArchitectFlow" hidden>
     <label>Flow:</label>
     <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
-      <option value="inboundcall">Inbound Call</option>`
-      <option value="outboundcall">Outbound Call</option>
-      <option value="inqueuecall">In-Queue Call</option>
-      <option value="securecall">Secure Call</option>
-      <option value="inboundchat">Inbound Chat</option>
-      <option value="inboundemail">Inbound Email</option>
-      <option value="inboundshortmessage">Inbound Message</option>
-      <option value="surveyinvite">Survey Invite</option>
     </select>
+  </div>
 
     <div id="divFlow" hidden>
       <label>Select Flow Name:</label>
@@ -37,7 +30,6 @@
 <script>
   const clientId = '83d37bf5-e050-47bf-9937-0314b259c9c4';
   const redirectUri = window.location.href;
-
 
 
   // Set purecloud objects
@@ -61,7 +53,10 @@
       .then(() => {
         console.log('Logged in');
         let token = client.authData.accessToken;
-
+        $.get('http://localhost:3000/getFlowTypes', (flowType) => {
+            createArchitectflow(flowType);
+        
+        })
         // send token to body
         // $.post('http://localhost:3000/gettoken', {
         //   token: token
@@ -71,6 +66,25 @@
       .catch((err) => console.error(err));
 
   })
+
+  function createArchitectflow(flowType) {
+    let flow = Object.keys(flowType);
+    
+    flow.forEach(function(flowType) {
+
+    let flowTypeName = document.getElementById("architectFlow");
+    let flowOptions = document.createElement("option");
+    let temporaryFlow = flowType.split(/(?=[A-Z])/).join(" ");
+    flowOptions.text = temporaryFlow.toUpperCase();
+    flowOptions.value = flowType;
+    flowTypeName.add(flowOptions);
+    showArchitectFlowDropdown()
+    });
+
+
+  }
+
+  
 
 
   function getArchitectFlows() {
@@ -104,8 +118,12 @@
     // Convert array to map to access values inside the array
     let mapSelectedFlow = new Map(Object.entries(getFlowsdata));
 
+    console.log("Map selected flow:" + JSON.stringify(mapSelectedFlow));
+
     // Store values of entities object to a variable
     let entities = mapSelectedFlow.get('entities');
+
+    console.log("entities:" + JSON.stringify(entities));
 
     // Call function createoptions
     entities.forEach(createOptions);
@@ -131,8 +149,6 @@
     option.text = item.name;
     option.value = item.id;
     name.add(option);
-
-    console.log(option);
     showDropdown();
 
   }
@@ -143,6 +159,16 @@
     divShow.style.display = "block";
 
   }
+
+
+function showArchitectFlowDropdown() {
+
+let divShowArchitectFlow = document.getElementById("divArchitectFlow");
+divShowArchitectFlow.style.display = "block";
+
+}
+
+
 
 
 </script>
