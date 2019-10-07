@@ -67,6 +67,7 @@
 
   })
 
+  // Create dynamic architect flow
   function createArchitectflow(flowType) {
     let flow = Object.keys(flowType);
     
@@ -84,7 +85,12 @@
 
   }
 
-  
+  function showArchitectFlowDropdown() {
+
+  let divShowArchitectFlow = document.getElementById("divArchitectFlow");
+  divShowArchitectFlow.style.display = "block";
+
+  }
 
 
   function getArchitectFlows() {
@@ -133,10 +139,16 @@
 
     let flows = document.getElementById("flowNames");
     let value = flows.options[flows.selectedIndex].value;
+    let flowInfoFlowType = document.getElementById("architectFlow");
+    let architectFlowValue = flowInfoFlowType.options[flowInfoFlowType.selectedIndex].value;
+    
+    console.log("architect flow value:" + architectFlowValue);
+
     console.log("Selected flow ID:" + value);
     // send token to body
     $.post('http://localhost:3000/getflowid', {
-          flowid: value
+          flowid: value,
+          flowInfoFlowType : architectFlowValue
         });
 
   }
@@ -159,16 +171,6 @@
     divShow.style.display = "block";
 
   }
-
-
-function showArchitectFlowDropdown() {
-
-let divShowArchitectFlow = document.getElementById("divArchitectFlow");
-divShowArchitectFlow.style.display = "block";
-
-}
-
-
 
 
 </script>

@@ -6,7 +6,6 @@ const app = express();
 const ivr = require('./docs/scripts/ivr.js');
 
 
-
 // Routes
 app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname,'docs','index.html'));
@@ -19,11 +18,11 @@ app.use(express.urlencoded({ extended: true })) // for parsing application/x-www
 
 app.post('/getflowid', function (req, res){
 
-// let flowId = req.body.assignToken;
+// // let flowId = req.body.assignToken;
 console.log("res" +JSON.stringify(req.body));
-console.log(JSON.stringify(req.body));
-// ivr.assignFlowid(req.body);
-});
+console.log(JSON.stringify(req.body.flowInfoFlowType));
+ivr.authenticateCredentials(req.body);
+})
 
 app.get('/getFlowTypes', function (req, res) {
  let flowType = ivr.getFlowTypes();
