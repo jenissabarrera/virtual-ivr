@@ -4,15 +4,23 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
   <script src='https://code.jquery.com/jquery-3.3.1.min.js'
     integrity='sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=' crossorigin='anonymous'></script>
-  <script src="https://sdk-cdn.mypurecloud.com/javascript/55.0.0/purecloud-platform-client-v2.min.js"></script>
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/59.0.0/purecloud-platform-client-v2.min.js"></script>
 </head>
 
 <body>
   <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
     
-    <div id = "divArchitectFlow" hidden>
+    <div id = "divArchitectFlow">
     <label>Flow:</label>
     <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
+    <option value="inboundcall">Inbound Call</option>
+    <option value="inboundchat">Inbound Chat</option>
+    <option value="inboundemail">Inbound Email</option>
+    <option value="inboundshortmessage">Inbound Message</option>
+    <option value="inqueuecall">In-Queue Call</option>
+    <option value="outboundcall">Outbound Call</option>
+    <option value="securecall">Secure Call</option>
+    <option value="surveyInvite">Survey Invite</option>
     </select>
   </div>
 
@@ -20,6 +28,10 @@
       <label>Select Flow Name:</label>
       <select style="width:auto" id="flowNames" onchange="changeOptions()">
       </select>
+    </div>
+
+    <div id="divDisplay" hidden>
+      
     </div>
   </div>
 </body>
@@ -31,21 +43,16 @@
   const clientId = '83d37bf5-e050-47bf-9937-0314b259c9c4';
   const redirectUri = window.location.href;
 
-
   // Set purecloud objects
-  // const platformClient = require('purecloud-platform-client-v2');
   const platformClient = require('platformClient');
   const client = platformClient.ApiClient.instance;
   const architectApi = new platformClient.ArchitectApi();
-  const oAuthApi = new platformClient.OAuthApi();
-
-  
 
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
 
   // cache purecloud credentials to browser
-  // client.setPersistSettings(true, 'test_app');
+  client.setPersistSettings(true, 'test_app');
 
   //Authenticate with Purecloud
   $(document).ready(() => {
@@ -53,46 +60,14 @@
       .then(() => {
         console.log('Logged in');
         let token = client.authData.accessToken;
-        $.get('http://localhost:3000/getFlowTypes', (flowType) => {
-            createArchitectflow(flowType);
-        
-        })
-        // send token to body
-        // $.post('http://localhost:3000/gettoken', {
-        //   token: token
-        // });
+        getArchitectFlows();
       })
 
       .catch((err) => console.error(err));
 
   })
 
-  // Create dynamic architect flow
-  function createArchitectflow(flowType) {
-    let flow = Object.keys(flowType);
-    
-    flow.forEach(function(flowType) {
-
-    let flowTypeName = document.getElementById("architectFlow");
-    let flowOptions = document.createElement("option");
-    let temporaryFlow = flowType.split(/(?=[A-Z])/).join(" ");
-    flowOptions.text = temporaryFlow.toUpperCase();
-    flowOptions.value = flowType;
-    flowTypeName.add(flowOptions);
-    showArchitectFlowDropdown()
-    });
-
-
-  }
-
-  function showArchitectFlowDropdown() {
-
-  let divShowArchitectFlow = document.getElementById("divArchitectFlow");
-  divShowArchitectFlow.style.display = "block";
-
-  }
-
-
+  // Generate all call flows from the selected flow type
   function getArchitectFlows() {
 
     let selectedFlow = document.getElementById("architectFlow").value;
@@ -104,6 +79,7 @@
 
     };
 
+    // Call architect API
     architectApi.getFlows(opts)
       .then((getFlowsdata) => {
         console.log(`getFlows success! data: ${JSON.stringify(getFlowsdata, null, 2)}`);
@@ -119,6 +95,7 @@
   // Populate dropdown list
   function populateDropdown(getFlowsdata) {
 
+    // Clear select on every load
     document.getElementById("flowNames").innerHTML = "";
 
     // Convert array to map to access values inside the array
@@ -145,11 +122,25 @@
     console.log("architect flow value:" + architectFlowValue);
 
     console.log("Selected flow ID:" + value);
-    // send token to body
-    $.post('http://localhost:3000/getflowid', {
-          flowid: value,
-          flowInfoFlowType : architectFlowValue
-        });
+  
+    getConfiguration(value)
+  }
+
+  function getConfiguration(value) {
+
+    let flowId = value; // String | Flow ID
+    let opts = { 
+      'deleted': false // Boolean | Include deleted flows
+    };
+
+    architectApi.getFlowLatestconfiguration(flowId, opts)
+      .then((data) => {
+        console.log(`getFlowLatestconfiguration success! data: ${JSON.stringify(data, null, 2)}`);
+      })
+      .catch((err) => {
+        console.log('There was a failure calling getFlowLatestconfiguration');
+        console.error(err);
+      });
 
   }
 

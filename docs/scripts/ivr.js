@@ -91,7 +91,8 @@ function openFlow(scriptSession) {
       console.log('  Object     : ' + traverseInfo.matchObject.logStr);
       console.log('  Type Name     : ' + traverseInfo.matchObject.displayTypeName);
       console.log('    Hierarchy: ' + JSON.stringify(traverseInfo.context.hierarchyStr));
-      console.log("\n");
+      console.log('    audio: ' + JSON.stringify(traverseInfo.context));
+      console.log('    audio test: ' + initialAudio);
       console.log('------------------------------------------------------')
 
       if(traverseInfo.matchObject.isArchValueAudio){
