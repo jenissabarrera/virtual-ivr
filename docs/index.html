@@ -4,26 +4,26 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
   <script src='https://code.jquery.com/jquery-3.3.1.min.js'
     integrity='sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=' crossorigin='anonymous'></script>
-    <script src="https://sdk-cdn.mypurecloud.com/javascript/59.0.0/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/59.0.0/purecloud-platform-client-v2.min.js"></script>
 </head>
 
 <body>
   <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
-    
+
     <!-- Changed getting Architect flow types from Dynamic to Static for the mean time-->
-    <div id = "divArchitectFlow">
-    <label>Flow:</label>
-    <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
-    <option value="inboundcall">Inbound Call</option>
-    <option value="inboundchat">Inbound Chat</option>
-    <option value="inboundemail">Inbound Email</option>
-    <option value="inboundshortmessage">Inbound Message</option>
-    <option value="inqueuecall">In-Queue Call</option>
-    <option value="outboundcall">Outbound Call</option>
-    <option value="securecall">Secure Call</option>
-    <option value="surveyInvite">Survey Invite</option>
-    </select>
-  </div>
+    <div id="divArchitectFlow">
+      <label>Flow:</label>
+      <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
+        <option value="inboundcall">Inbound Call</option>
+        <option value="inboundchat">Inbound Chat</option>
+        <option value="inboundemail">Inbound Email</option>
+        <option value="inboundshortmessage">Inbound Message</option>
+        <option value="inqueuecall">In-Queue Call</option>
+        <option value="outboundcall">Outbound Call</option>
+        <option value="securecall">Secure Call</option>
+        <option value="surveyInvite">Survey Invite</option>
+      </select>
+    </div>
 
     <div id="divFlow" hidden>
       <label>Select Flow Name:</label>
@@ -32,7 +32,7 @@
     </div>
 
     <div id="divDisplay" hidden>
-      
+
     </div>
   </div>
 </body>
@@ -52,10 +52,10 @@
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
 
-  // cache purecloud credentials to browser
-  client.setPersistSettings(true, 'test_app');
+  // Cache purecloud credentials to browser
+  // client.setPersistSettings(true, 'test_app');
 
-  //Authenticate with Purecloud
+  // Authenticate with Purecloud
   $(document).ready(() => {
     client.loginImplicitGrant(clientId, redirectUri)
       .then(() => {
@@ -83,7 +83,7 @@
     // Call architect API
     architectApi.getFlows(opts)
       .then((getFlowsdata) => {
-        console.log(`getFlows success! data: ${JSON.stringify(getFlowsdata, null, 2)}`);
+        // console.log(`getFlows success! data: ${JSON.stringify(getFlowsdata, null, 2)}`);
         populateDropdown(getFlowsdata);
       })
       .catch((err) => {
@@ -107,42 +107,10 @@
     // Store values of entities object to a variable
     let entities = mapSelectedFlow.get('entities');
 
-    console.log("entities:" + JSON.stringify(entities));
+    // console.log("entities:" + JSON.stringify(entities));
 
     // Call function createoptions
     entities.forEach(createOptions);
-  }
-
-  function changeOptions() {
-
-    let flows = document.getElementById("flowNames");
-    let value = flows.options[flows.selectedIndex].value;
-    let flowInfoFlowType = document.getElementById("architectFlow");
-    let architectFlowValue = flowInfoFlowType.options[flowInfoFlowType.selectedIndex].value;
-    
-    console.log("architect flow value:" + architectFlowValue);
-
-    console.log("Selected flow ID:" + value);
-  
-    getConfiguration(value)
-  }
-
-  function getConfiguration(value) {
-
-    let flowId = value; // String | Flow ID
-    let opts = { 
-      'deleted': false // Boolean | Include deleted flows
-    };
-
-    architectApi.getFlowLatestconfiguration(flowId, opts)
-      .then((data) => {
-        console.log(`getFlowLatestconfiguration success! data: ${JSON.stringify(data, null, 2)}`);
-      })
-      .catch((err) => {
-        console.log('There was a failure calling getFlowLatestconfiguration');
-        console.error(err);
-      });
-
   }
 
   // Function to create options
@@ -154,15 +122,73 @@
     option.value = item.id;
     name.add(option);
     showDropdown();
-
   }
 
   function showDropdown() {
 
     let divShow = document.getElementById("divFlow");
     divShow.style.display = "block";
+    
 
   }
+
+  function changeOptions() {
+
+    let flows = document.getElementById("flowNames");
+    let value = flows.options[flows.selectedIndex].value;
+    let flowInfoFlowType = document.getElementById("architectFlow");
+    let architectFlowValue = flowInfoFlowType.options[flowInfoFlowType.selectedIndex].value;
+
+    console.log("architect flow value:" + architectFlowValue);
+
+    console.log("Selected flow ID:" + value);
+
+    getConfiguration(value)
+  }
+
+  function getConfiguration(value) {
+
+    let flowId = value; // String | Flow ID
+    let opts = {
+      'deleted': false // Boolean | Include deleted flows
+    };
+
+    architectApi.getFlowLatestconfiguration(flowId, opts)
+      .then((data) => {
+        console.log(`getFlowLatestconfiguration success! data: ${JSON.stringify(data, null, 2)}`);
+        createMenu(data);
+      })
+      .catch((err) => {
+        console.log('There was a failure calling getFlowLatestconfiguration');
+        console.error(err);
+      });
+
+  }
+
+
+  // Generate main menu content
+  function createMenu (data) {
+    divDisplay.style.display = "block";
+    let br = document.createElement("br");
+    console.log("Inital Greeting: " + data.initialPrompts.defaultAudio.uiMetaData.sequenceItems[0].parameter);
+    
+    // Display initial greeting
+    let greeting = document.createTextNode("Initial Greeting: " + data.initialPrompts.defaultAudio.uiMetaData.sequenceItems[0].parameter);
+    document.getElementById("divDisplay").appendChild(greeting);
+    document.getElementById("divDisplay").appendChild(br);
+
+    // Display menu prompt
+    console.log("Menu Prompt: " + data.flowSequenceItemList[0].prompts.defaultAudio.config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);
+    let prompt = document.createTextNode("Menu Prompt:" + data.flowSequenceItemList[0].prompts.defaultAudio.config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);
+    document.getElementById("divDisplay").appendChild(prompt);
+
+    
+
+
+
+  }
+
+  
 
 
 </script>
