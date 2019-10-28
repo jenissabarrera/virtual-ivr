@@ -43,18 +43,14 @@
 <script>
   const clientId = '83d37bf5-e050-47bf-9937-0314b259c9c4';
   const redirectUri = window.location.href;
-
   // Set purecloud objects
   const platformClient = require('platformClient');
   const client = platformClient.ApiClient.instance;
   const architectApi = new platformClient.ArchitectApi();
-
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
-
   // Cache purecloud credentials to browser
   // client.setPersistSettings(true, 'test_app');
-
   // Authenticate with Purecloud
   $(document).ready(() => {
     client.loginImplicitGrant(clientId, redirectUri)
@@ -63,23 +59,16 @@
         let token = client.authData.accessToken;
         getArchitectFlows();
       })
-
       .catch((err) => console.error(err));
-
   })
-
   // Generate all call flows from the selected flow type
   function getArchitectFlows() {
-
     let selectedFlow = document.getElementById("architectFlow").value;
-
     let opts = {
       type: [selectedFlow],
       pageNumber: 1,
       pageSize: 1000
-
     };
-
     // Call architect API
     architectApi.getFlows(opts)
       .then((getFlowsdata) => {
@@ -89,32 +78,22 @@
         console.log('There was a failure calling getFlows');
         console.error(err);
       });
-
   }
-
   // Populate dropdown list
   function populateDropdown(getFlowsdata) {
-
     // Clear select on every load
     document.getElementById("flowNames").innerHTML = "";
-
     // Convert array to map to access values inside the array
     let mapSelectedFlow = new Map(Object.entries(getFlowsdata));
-
     console.log("Map selected flow:" + JSON.stringify(mapSelectedFlow));
-
     // Store values of entities object to a variable
     let entities = mapSelectedFlow.get('entities');
-
     // console.log("entities:" + JSON.stringify(entities));
-
     // Call function createoptions
     entities.forEach(createOptions);
   }
-
   // Function to create options
   function createOptions(item) {
-
     let name = document.getElementById("flowNames");
     let option = document.createElement("option");
     option.text = item.name;
@@ -122,58 +101,42 @@
     name.add(option);
     showDropdown();
   }
-
   function showDropdown() {
-
     let divShow = document.getElementById("divFlow");
     divShow.style.display = "block";
   }
-
   function changeOptions() {
-
     let flows = document.getElementById("flowNames");
     let value = flows.options[flows.selectedIndex].value;
     let flowInfoFlowType = document.getElementById("architectFlow");
     let architectFlowValue = flowInfoFlowType.options[flowInfoFlowType.selectedIndex].value;
-
     getConfiguration(value)
   }
-
   function getConfiguration(value) {
-
     let flowId = value; // String | Flow ID
     let opts = {
       'deleted': false // Boolean | Include deleted flows
     };
-
     architectApi.getFlowLatestconfiguration(flowId, opts)
       .then((flowLatestConfig) => {
         console.log(`getFlowLatestconfiguration success! data: ${JSON.stringify(flowLatestConfig, null, 2)}`);
-
         try {
           createMenu(flowLatestConfig);
         } catch (err) {
           console.log(err);
           noMenu()
         }
-
       })
       .catch((err) => {
         console.log('There was a failure calling getFlowLatestconfiguration');
         console.error(err);
       });
-
   }
-
-
   // Generate main menu content
   function createMenu(flowLatestConfig) {
-
     // Clear divDisplay
     document.getElementById("divDisplay").innerHTML = "";
-
     divDisplay.style.display = "block";
-
     // Display initial greeting
     let greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio
       .uiMetaData
@@ -181,47 +144,31 @@
     document.getElementById("divDisplay").appendChild(greeting);
     document.getElementById("divDisplay").innerHTML += "<br>"
     flowSequence = flowLatestConfig.flowSequenceItemList;
-
     // Display menu prompt
-    let prompt = document.createTextNode("Menu Prompt:" + flowLatestConfig.flowSequenceItemList[flowSequence.length - 1]
-      .prompts
-      .defaultAudio.config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);
+    let prompt = document.createTextNode("Menu Prompt:" + flowLatestConfig.flowSequenceItemList.find(flowSequenceItem => flowSequenceItem.trackingId == 10).prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter);
     document.getElementById("divDisplay").appendChild(prompt);
-
     document.getElementById("divDisplay").innerHTML += "<br>"
-
     let createInput = document.createElement("input");
     document.getElementById("divDisplay").appendChild(createInput);
     createInput.setAttribute("id", "inputText");
     createInput.onchange = function () {
       filterInput(document.getElementById("inputText").value, flowLatestConfig, flowSequence)
     }
-
   }
-
-
   function filterInput(inputValue, flowLatestConfig, flowSequence) {
-
     let storeFlow = flowLatestConfig.flowSequenceItemList[flowSequence.length - 1].menuChoiceList;
-
     for (let dtmf of storeFlow) {
-
       if (inputValue == dtmf.digit) {
         let task = dtmf.action.__type
         determineTask(task, dtmf);
       }
-
     }
-
   }
-
   function determineTask(task, dtmf) {
-
     switch (task) {
       case "TransferUserAction":
         transferToUser(task, dtmf)
         break;
-
       case "TransferGroupAction":
         transferToGroup(task, dtmf)
         break;
@@ -229,24 +176,22 @@
       case "TransferExternalAction":
         transferToNumber(task, dtmf)
         break;
+      case "TransferPureMatchAction":
+        transferToACD(task, dtmf)
+        break;
     }
-
   }
-
   function transferToUser(task, dtmf) {
     let userName = dtmf.action.user.config.lit.text;
     let transferComplete = document.createTextNode("Transfer to user complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-
     document.getElementById("divDisplay").innerHTML += "<br>"
-
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to User... ");
     } else {
       preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
     }
-
     document.getElementById("divDisplay").appendChild(preTransfer);
     document.getElementById("divDisplay").innerHTML += "<br>"
     user = document.createTextNode("User: " + userName);
@@ -254,15 +199,12 @@
     document.getElementById("divDisplay").innerHTML += "<br>"
     document.getElementById("divDisplay").appendChild(transferComplete);
   }
-
   function transferToGroup(task, dtmf) {
     let groupName = dtmf.action._group.text;
     let transferComplete = document.createTextNode("Transfer to group complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-
     document.getElementById("divDisplay").innerHTML += "<br>"
-
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to Group... ");
     } else {
@@ -274,9 +216,7 @@
     document.getElementById("divDisplay").appendChild(group);
     document.getElementById("divDisplay").innerHTML += "<br>"
     document.getElementById("divDisplay").appendChild(transferComplete);
-
   }
-
   function transferToNumber (task, dtmf) {
     
     let number = dtmf.action.externalNumber.text;
@@ -296,13 +236,29 @@
     document.getElementById("divDisplay").appendChild(group);
     document.getElementById("divDisplay").innerHTML += "<br>"
     document.getElementById("divDisplay").appendChild(transferComplete);
-
   }
-
+  function transferToACD (task, dtmf) {
+    
+    let queue = dtmf.action.queues[0].text;
+    let transferComplete = document.createTextNode("Transfer to ACD Complete");
+    let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+    }
+    document.getElementById("divDisplay").appendChild(preTransfer);
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    group = document.createTextNode("Queue: " + queue);
+    document.getElementById("divDisplay").appendChild(group);
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    document.getElementById("divDisplay").appendChild(transferComplete);
+  }
   function noMenu() {
-
     alert("This flow is not compatible for conversion. Please select another flow")
-
     // Clear divDisplay
     document.getElementById("divDisplay").innerHTML = "";
   }
