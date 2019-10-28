@@ -179,6 +179,9 @@
       case "TransferPureMatchAction":
         transferToACD(task, dtmf)
         break;
+      case "DisconnectAction":
+        disconnect()
+        break;
     }
   }
   function transferToUser(task, dtmf) {
@@ -257,6 +260,13 @@
     document.getElementById("divDisplay").innerHTML += "<br>"
     document.getElementById("divDisplay").appendChild(transferComplete);
   }
+
+  function disconnect() {
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    let disconnectPrompt= document.createTextNode("Disconnected..");
+    document.getElementById("divDisplay").appendChild(disconnectPrompt);
+  }
+
   function noMenu() {
     alert("This flow is not compatible for conversion. Please select another flow")
     // Clear divDisplay
