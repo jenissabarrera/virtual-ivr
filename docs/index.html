@@ -179,9 +179,13 @@
       case "TransferPureMatchAction":
         transferToACD(task, dtmf)
         break;
+      case "TransferVoicemailAction":
+        transferToVoiceMail(task, dtmf)
+        break;
       case "DisconnectAction":
         disconnect()
         break;
+        
     }
   }
   function transferToUser(task, dtmf) {
@@ -261,6 +265,26 @@
     document.getElementById("divDisplay").appendChild(transferComplete);
   }
 
+  function transferToVoiceMail(task, dtmf) {
+    let vmOwner = dtmf.action.transferTarget.text;
+    let transferComplete = document.createTextNode("Transfer to Voice Mail complete");
+    let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to " + vmOwner + " voice mail");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+    }
+    document.getElementById("divDisplay").appendChild(preTransfer);
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    group = document.createTextNode("Name: " + vmOwner);
+    document.getElementById("divDisplay").appendChild(group);
+    document.getElementById("divDisplay").innerHTML += "<br>"
+    document.getElementById("divDisplay").appendChild(transferComplete);
+  }
+
   function disconnect() {
     document.getElementById("divDisplay").innerHTML += "<br>"
     let disconnectPrompt= document.createTextNode("Disconnected..");
@@ -269,7 +293,6 @@
 
   function noMenu() {
     alert("This flow is not compatible for conversion. Please select another flow")
-    // Clear divDisplay
     document.getElementById("divDisplay").innerHTML = "";
   }
 </script>
