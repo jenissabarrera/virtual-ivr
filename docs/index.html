@@ -10,22 +10,7 @@
 <body>
   <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
 
-    <!-- Changed getting Architect flow types from Dynamic to Static for the mean time-->
-    <div id="divArchitectFlow">
-      <label>Flow:</label>
-      <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
-        <option value="inboundcall">Inbound Call</option>
-        <option value="inboundchat">Inbound Chat</option>
-        <option value="inboundemail">Inbound Email</option>
-        <option value="inboundshortmessage">Inbound Message</option>
-        <option value="inqueuecall">In-Queue Call</option>
-        <option value="outboundcall">Outbound Call</option>
-        <option value="securecall">Secure Call</option>
-        <option value="surveyInvite">Survey Invite</option>
-      </select>
-    </div>
-
-    <div id="divFlow" hidden>
+    <div id="divFlow">
       <label>Select Flow Name:</label>
       <select style="width:auto" id="flowNames" onchange="changeOptions()">
       </select>
@@ -63,9 +48,9 @@
   })
   // Generate all call flows from the selected flow type
   function getArchitectFlows() {
-    let selectedFlow = document.getElementById("architectFlow").value;
+
     let opts = {
-      type: [selectedFlow],
+      type: ["inboundcall"],
       pageNumber: 1,
       pageSize: 1000
     };
@@ -108,8 +93,7 @@
   function changeOptions() {
     let flows = document.getElementById("flowNames");
     let value = flows.options[flows.selectedIndex].value;
-    let flowInfoFlowType = document.getElementById("architectFlow");
-    let architectFlowValue = flowInfoFlowType.options[flowInfoFlowType.selectedIndex].value;
+    let flowInfoFlowType = "inboundcall";
     getConfiguration(value)
   }
   function getConfiguration(value) {
@@ -172,7 +156,6 @@
       case "TransferGroupAction":
         transferToGroup(task, dtmf)
         break;
-      
       case "TransferExternalAction":
         transferToNumber(task, dtmf)
         break;
