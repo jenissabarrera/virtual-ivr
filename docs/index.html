@@ -10,27 +10,27 @@
 <body>
   <div id="mainDiv" class="row row-no-gutters" style="margin: 25px">
 
-    <!-- Changed getting Architect flow types from Dynamic to Static for the mean time-->
-    <div id="divArchitectFlow">
-      <label>Flow:</label>
-      <select onchange="getArchitectFlows()" style="width:auto" id="architectFlow">
-        <option value="inboundcall">Inbound Call</option>
-        <option value="inboundchat">Inbound Chat</option>
-        <option value="inboundemail">Inbound Email</option>
-        <option value="inboundshortmessage">Inbound Message</option>
-        <option value="inqueuecall">In-Queue Call</option>
-        <option value="outboundcall">Outbound Call</option>
-        <option value="securecall">Secure Call</option>
-        <option value="surveyInvite">Survey Invite</option>
-      </select>
-    </div>
-
-    <div id="divFlow" hidden>
+    <div id="divFlow">
       <label>Select Flow Name:</label>
       <select style="width:auto" id="flowNames" onchange="changeOptions()">
       </select>
-    </div>
 
+      <!-- <div class="dialpad">
+        <button id="dialpad_1" class="dialpad-number no-letters ember-view">1</button>
+        <button id="dialpad_2" class="dialpad-number ember-view">2</button>
+        <button id="dialpad_3" class="dialpad-number ember-view">3</button>
+        <button id="dialpad_4" class="dialpad-number ember-view">4</button>
+        <button id="dialpad_5" class="dialpad-number ember-view">5</button>
+        <button id="dialpad_6" class="dialpad-number ember-view">6</button>
+        <button id="dialpad_7" class="dialpad-number ember-view">7</button>
+        <button id="dialpad_8" class="dialpad-number ember-view">8</button>
+        <button id="dialpad_9" class="dialpad-number ember-view">9</button>
+        <button id="dialpad_asterisk" class="dialpad-number no-letters no-number ember-view">*</button>
+        <button id="dialpad_0" class="dialpad-number ember-view">0</button>
+        <button id="dialpad_hash" class="dialpad-number no-letters no-number ember-view">#</button>
+      </div> -->
+    </div>
+    
     <div id="divDisplay" hidden>
 
     </div>
@@ -47,6 +47,8 @@
   const platformClient = require('platformClient');
   const client = platformClient.ApiClient.instance;
   const architectApi = new platformClient.ArchitectApi();
+
+  let displayDiv = document.getElementById("divDisplay")
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
   // Cache purecloud credentials to browser
@@ -63,9 +65,8 @@
   })
   // Generate all call flows from the selected flow type
   function getArchitectFlows() {
-    let selectedFlow = document.getElementById("architectFlow").value;
     let opts = {
-      type: [selectedFlow],
+      type: ["inboundcall"],
       pageNumber: 1,
       pageSize: 1000
     };
@@ -108,8 +109,7 @@
   function changeOptions() {
     let flows = document.getElementById("flowNames");
     let value = flows.options[flows.selectedIndex].value;
-    let flowInfoFlowType = document.getElementById("architectFlow");
-    let architectFlowValue = flowInfoFlowType.options[flowInfoFlowType.selectedIndex].value;
+    let flowInfoFlowType = "inboundcall";
     getConfiguration(value)
   }
   function getConfiguration(value) {
@@ -119,9 +119,18 @@
     };
     architectApi.getFlowLatestconfiguration(flowId, opts)
       .then((flowLatestConfig) => {
-        console.log(`getFlowLatestconfiguration success! data: ${JSON.stringify(flowLatestConfig, null, 2)}`);
+        let InitialSequenceId = flowLatestConfig.initialSequence
+         // Clear divDisplay
+        displayDiv.innerHTML = "";
+        divDisplay.style.display = "block";
+        let greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio
+          .uiMetaData
+          .sequenceItems[0].parameter);
+        let flowSequence = flowLatestConfig.flowSequenceItemList;
+        displayDiv.appendChild(greeting);
+        displayDiv.innerHTML += "<br>"
         try {
-          createMenu(flowLatestConfig);
+          gotoNextSequence(flowSequence, InitialSequenceId);
         } catch (err) {
           console.log(err);
           noMenu()
@@ -132,39 +141,176 @@
         console.error(err);
       });
   }
-  // Generate main menu content
-  function createMenu(flowLatestConfig) {
-    // Clear divDisplay
-    document.getElementById("divDisplay").innerHTML = "";
-    divDisplay.style.display = "block";
-    // Display initial greeting
-    let greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio
-      .uiMetaData
-      .sequenceItems[0].parameter);
-    document.getElementById("divDisplay").appendChild(greeting);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    flowSequence = flowLatestConfig.flowSequenceItemList;
-    // Display menu prompt
-    let prompt = document.createTextNode("Menu Prompt:" + flowLatestConfig.flowSequenceItemList.find(flowSequenceItem => flowSequenceItem.trackingId == 10).prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter);
-    document.getElementById("divDisplay").appendChild(prompt);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    let createInput = document.createElement("input");
-    document.getElementById("divDisplay").appendChild(createInput);
-    createInput.setAttribute("id", "inputText");
-    createInput.onchange = function () {
-      filterInput(document.getElementById("inputText").value, flowLatestConfig, flowSequence)
+   
+  function gotoNextSequence(flowSequence, sequenceId) {
+
+    let initialSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === sequenceId);
+    
+    // get initialSequence type-- if Menu or Task
+    let InitialMenuType = initialSequence.__type;
+
+    if (InitialMenuType === "Menu") { 
+      // Display menu prompt
+      displayDiv.innerHTML += "<br>"
+      let prompt = document.createTextNode("Menu Prompt: " + initialSequence.prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter);
+      displayDiv.appendChild(prompt);
+      displayDiv.innerHTML += "<br>"
+      let createInput = document.createElement("input");
+      displayDiv.appendChild(createInput);
+      createInput.setAttribute("id", sequenceId);
+      createInput.onchange = function () {
+        console.log(document.getElementById(sequenceId).value)
+        console.log( " " + initialSequence)
+        console.log(" " +  flowSequence)
+        filterInput(document.getElementById(sequenceId).value, initialSequence, flowSequence)
+      } 
+    } else if (InitialMenuType === "Task") {
+      findTask(flowSequence, InitialSequenceId)
     }
   }
-  function filterInput(inputValue, flowLatestConfig, flowSequence) {
-    let storeFlow = flowLatestConfig.flowSequenceItemList[flowSequence.length - 1].menuChoiceList;
-    for (let dtmf of storeFlow) {
-      if (inputValue == dtmf.digit) {
-        let task = dtmf.action.__type
-        determineTask(task, dtmf);
+  
+  // FUNCTIONS FOR TASK -----------------------------------------------------------------------------------------------------------------------------------------------------  
+  // find task in flowSequenceItemList
+  function findTask(flowSequence, nextSequenceId) {  
+    let taskSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === nextSequenceId);
+    let startActionId = taskSequence.startAction;
+    let taskName = taskSequence.name;
+    let actionList = taskSequence.actionList;
+    
+    let taskTitle = document.createTextNode("Task Name: " + taskName);
+
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(taskTitle);
+    displayDiv.innerHTML += "<br>"
+    let startText = document.createTextNode("Start");
+    displayDiv.appendChild(startText);
+    // find the next task in actionList
+    nextTaskInActionList(actionList, startActionId)
+  } 
+
+  // function to find the next task type
+  function nextTaskInActionList(actionList, actionId) {
+    for (i=0; i < actionList.length; i++) {
+      if (actionId === actionList[i].id) {
+        let actionType = actionList[i].__type
+        console.log(actionId);
+        console.log(actionType);
+        switch (actionType) {
+        case "PlayAudioAction":
+          playAudioAction(actionList,actionList[i])
+          break;
+        case "TransferPureMatchAction":
+          transferToACDAction(actionList,actionList[i])
+          break;
+        case "CollectInputAction":
+          inputValueAction(actionList, actionList[i])
+          break;  
+        case "DisconnectAction":
+          disconnectAction(actionList[i])
+          break;     
+        }
       }
     }
   }
-  function determineTask(task, dtmf) {
+  
+  function playAudioAction(actionList, action) {  
+    let nextActionId = action.nextAction;
+
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let playAudio = document.createTextNode("Audio: " + action.prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter); 
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(playAudio);
+    nextTaskInActionList(actionList, nextActionId)  
+  }
+
+  function transferToACDAction(actionList, action) {  
+    let nextActionId = action.nextAction;
+
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("Queue: " + action.queues[0].text); 
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+    }
+
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    nextTaskInActionList(actionList, nextActionId);    
+  }
+
+  function inputValueAction(actionList, action) {
+    let nextActionIdSuccess = action.paths.find(findSuccess => findSuccess.label === 'Success').nextActionId;
+    let nextActionIdFailure = action.paths.find(findSuccess => findSuccess.label === 'Failure').nextActionId;
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let preTransferAudio = action.prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+    }
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    let inputId = action.id;
+    let createInput = document.createElement("input");
+    displayDiv.appendChild(createInput);
+    createInput.setAttribute("id", inputId);    
+    
+    createInput.onchange = function () {
+
+      let userInput = document.getElementById(inputId).value
+      let maxDigit = action.numberOfDigitsMax.text
+      let minDigit = action.numberOfDigitsMin.text
+      if ((userInput <= maxDigit)&&(userInput >= minDigit)) {
+        inputValue = document.createTextNode("Input Value: " + userInput);
+        displayDiv.appendChild(inputValue);
+        displayDiv.innerHTML += "<br>"
+        nextTaskInActionList(actionList, nextActionIdSuccess);
+        nextTaskInActionList(actionList, nextActionId);
+      } else {
+        nextTaskInActionList(actionList, nextActionIdFailure);
+      }      
+    }
+    
+  }
+
+  function disconnectAction(action) {  
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let discPrompt = document.createTextNode("Task Disconneted..");
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(discPrompt);
+  }
+  
+  // END FUNCTIONS FOR TASK -------------------------------------------------------------------------------------------------------------------------------------------------
+  
+  function filterInput(inputValue, initialSequence, flowSequence) {
+    let storeFlow = initialSequence.menuChoiceList;
+    for (let dtmf of storeFlow) {
+      if (inputValue == dtmf.digit) {
+        let task = dtmf.action.__type
+        determineTask(task, dtmf, flowSequence);
+      }
+    }
+  }
+
+  function determineTask(task, dtmf, flowSequence) {
     switch (task) {
       case "TransferUserAction":
         transferToUser(task, dtmf)
@@ -172,7 +318,6 @@
       case "TransferGroupAction":
         transferToGroup(task, dtmf)
         break;
-      
       case "TransferExternalAction":
         transferToNumber(task, dtmf)
         break;
@@ -182,10 +327,16 @@
       case "TransferVoicemailAction":
         transferToVoiceMail(task, dtmf)
         break;
+      case "TaskAction":
+        // go to findTask to find Task in flowSequenceItemList
+        findTask(flowSequence, dtmf.action.taskReference)
+        break;
+      case "MenuAction": 
+        gotoNextSequence(flowSequence, dtmf.action.menuReference);
+        break;
       case "DisconnectAction":
         disconnect()
-        break;
-        
+        break;      
     }
   }
   function transferToUser(task, dtmf) {
@@ -193,56 +344,55 @@
     let transferComplete = document.createTextNode("Transfer to user complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.innerHTML += "<br>"
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to User... ");
     } else {
       preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
     }
-    document.getElementById("divDisplay").appendChild(preTransfer);
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
     user = document.createTextNode("User: " + userName);
-    document.getElementById("divDisplay").appendChild(user);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    document.getElementById("divDisplay").appendChild(transferComplete);
+    displayDiv.appendChild(user);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(transferComplete);
   }
   function transferToGroup(task, dtmf) {
     let groupName = dtmf.action._group.text;
     let transferComplete = document.createTextNode("Transfer to group complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.innerHTML += "<br>"
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to Group... ");
     } else {
       preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
     }
-    document.getElementById("divDisplay").appendChild(preTransfer);
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
     group = document.createTextNode("Group: " + groupName);
-    document.getElementById("divDisplay").appendChild(group);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    document.getElementById("divDisplay").appendChild(transferComplete);
+    displayDiv.appendChild(group);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(transferComplete);
   }
-  function transferToNumber (task, dtmf) {
-    
+  function transferToNumber (task, dtmf) {  
     let number = dtmf.action.externalNumber.text;
     let transferComplete = document.createTextNode("Transfer to number complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.innerHTML += "<br>"
     
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to Number... ");
     } else {
       preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
     }
-    document.getElementById("divDisplay").appendChild(preTransfer);
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
     group = document.createTextNode("Number: " + number);
-    document.getElementById("divDisplay").appendChild(group);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    document.getElementById("divDisplay").appendChild(transferComplete);
+    displayDiv.appendChild(group);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(transferComplete);
   }
   function transferToACD (task, dtmf) {
     
@@ -250,49 +400,46 @@
     let transferComplete = document.createTextNode("Transfer to ACD Complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.innerHTML += "<br>"
     
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
     } else {
       preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
     }
-    document.getElementById("divDisplay").appendChild(preTransfer);
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
     group = document.createTextNode("Queue: " + queue);
-    document.getElementById("divDisplay").appendChild(group);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    document.getElementById("divDisplay").appendChild(transferComplete);
+    displayDiv.appendChild(group);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(transferComplete);
   }
-
   function transferToVoiceMail(task, dtmf) {
     let vmOwner = dtmf.action.transferTarget.text;
     let transferComplete = document.createTextNode("Transfer to Voice Mail complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.innerHTML += "<br>"
     
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to " + vmOwner + " voice mail");
     } else {
       preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
     }
-    document.getElementById("divDisplay").appendChild(preTransfer);
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
     group = document.createTextNode("Name: " + vmOwner);
-    document.getElementById("divDisplay").appendChild(group);
-    document.getElementById("divDisplay").innerHTML += "<br>"
-    document.getElementById("divDisplay").appendChild(transferComplete);
+    displayDiv.appendChild(group);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(transferComplete);
   }
-
   function disconnect() {
-    document.getElementById("divDisplay").innerHTML += "<br>"
+    displayDiv.innerHTML += "<br>"
     let disconnectPrompt= document.createTextNode("Disconnected..");
-    document.getElementById("divDisplay").appendChild(disconnectPrompt);
+    displayDiv.appendChild(disconnectPrompt);
   }
-
   function noMenu() {
     alert("This flow is not compatible for conversion. Please select another flow")
-    document.getElementById("divDisplay").innerHTML = "";
+    displayDiv.innerHTML = "";
   }
 </script>
