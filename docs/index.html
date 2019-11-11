@@ -204,11 +204,17 @@
     for (i=0; i < actionList.length; i++) {
       if (actionId === actionList[i].id) {
         let actionType = actionList[i].__type
-        console.log(actionId);
-        console.log(actionType);
+        // console.log(actionId);
+        // console.log(actionType);
         switch (actionType) {
         case "PlayAudioAction":
           playAudioAction(actionList,actionList[i])
+          break;
+        case "TransferUserAction":
+          transferToUserAction(actionList,actionList[i])
+          break;
+        case "TransferExternalAction":
+          transferToExtNumberAction(actionList,actionList[i])
           break;
         case "TransferPureMatchAction":
           transferToACDAction(actionList,actionList[i])
@@ -248,7 +254,53 @@
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
     } else {
-      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
+    }
+
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    nextTaskInActionList(actionList, nextActionId);    
+  }
+
+  function transferToUserAction(actionList, action) {  
+    let nextActionId = action.nextAction;
+
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("User: " + action.user.text); 
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
+    }
+
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    nextTaskInActionList(actionList, nextActionId);    
+  }
+  
+  function transferToExtNumberAction(actionList, action) {  
+    let nextActionId = action.nextAction;
+
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("External Number: " + action.externalNumber.text); 
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
     }
 
     displayDiv.appendChild(actionTitle);
@@ -271,7 +323,7 @@
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("");
     } else {
-      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
     }
     displayDiv.appendChild(actionTitle);
     displayDiv.innerHTML += "<br>"
@@ -287,17 +339,17 @@
       let userInput = document.getElementById(inputId).value
       let maxDigit = action.numberOfDigitsMax.text
       let minDigit = action.numberOfDigitsMin.text
+      displayDiv.innerHTML += "<br>"
       if ((userInput <= maxDigit)&&(userInput >= minDigit)) {
-        inputValue = document.createTextNode("Input Value: " + userInput);
-        displayDiv.appendChild(inputValue);
-        displayDiv.innerHTML += "<br>"
-        nextTaskInActionList(actionList, nextActionIdSuccess);
-        nextTaskInActionList(actionList, nextActionId);
+        whichActionId = nextActionIdSuccess;
       } else {
-        nextTaskInActionList(actionList, nextActionIdFailure);
-      }      
-    }
-    
+        whichActionId = nextActionIdFailure;
+      }
+      inputValue = document.createTextNode("Input Value: " + userInput);
+      displayDiv.appendChild(inputValue);
+      nextTaskInActionList(actionList, whichActionId);
+      nextTaskInActionList(actionList, nextActionId);
+    }    
   }
 
   function disconnectAction(action) {  
