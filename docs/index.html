@@ -123,12 +123,19 @@
          // Clear divDisplay
         displayDiv.innerHTML = "";
         divDisplay.style.display = "block";
-        let greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio
-          .uiMetaData
-          .sequenceItems[0].parameter);
+        let greeting 
+        // initialGreeting = flowLatestConfig.initialPrompts.defaultAudio.uiMetaData.sequenceItems[0].parameter
+       
+        if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('ToAudioTTS')) {
+          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio.config.ToAudioTTS.operands[0].lit.text);
+        } else if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('AudioPlaybackOptions')) {     
+          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio.config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);  
+        } 
+
         let flowSequence = flowLatestConfig.flowSequenceItemList;
         displayDiv.appendChild(greeting);
         displayDiv.innerHTML += "<br>"
+
         try {
           gotoNextSequence(flowSequence, InitialSequenceId);
         } catch (err) {
@@ -145,7 +152,6 @@
   function gotoNextSequence(flowSequence, sequenceId) {
 
     let initialSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === sequenceId);
-    
     // get initialSequence type-- if Menu or Task
     let InitialMenuType = initialSequence.__type;
 
@@ -160,30 +166,35 @@
       createInput.setAttribute("id", sequenceId);
       createInput.onchange = function () {
         console.log(document.getElementById(sequenceId).value)
-        console.log( " " + initialSequence)
-        console.log(" " +  flowSequence)
+        
         filterInput(document.getElementById(sequenceId).value, initialSequence, flowSequence)
       } 
     } else if (InitialMenuType === "Task") {
-      findTask(flowSequence, InitialSequenceId)
+      findTask(flowSequence, sequenceId)
     }
   }
   
   // FUNCTIONS FOR TASK -----------------------------------------------------------------------------------------------------------------------------------------------------  
   // find task in flowSequenceItemList
   function findTask(flowSequence, nextSequenceId) {  
+    console.log("Im here find task!!!")
+    console.log(nextSequenceId);
+    console.log(flowSequence);
     let taskSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === nextSequenceId);
     let startActionId = taskSequence.startAction;
+    
+    console.log(taskSequence);
+    console.log(taskSequence.startAction);
     let taskName = taskSequence.name;
     let actionList = taskSequence.actionList;
     
     let taskTitle = document.createTextNode("Task Name: " + taskName);
-
+    let startText = document.createTextNode("Start");
+    displayDiv.innerHTML += "<br>"  
+    displayDiv.appendChild(startText);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(taskTitle);
-    displayDiv.innerHTML += "<br>"
-    let startText = document.createTextNode("Start");
-    displayDiv.appendChild(startText);
+
     // find the next task in actionList
     nextTaskInActionList(actionList, startActionId)
   } 
