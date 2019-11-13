@@ -30,7 +30,7 @@
         <button id="dialpad_hash" class="dialpad-number no-letters no-number ember-view">#</button>
       </div> -->
     </div>
-    
+
     <div id="divDisplay" hidden>
 
     </div>
@@ -47,8 +47,11 @@
   const platformClient = require('platformClient');
   const client = platformClient.ApiClient.instance;
   const architectApi = new platformClient.ArchitectApi();
-
+  
+  //Set reusable variables
   let displayDiv = document.getElementById("divDisplay")
+  let flowSequence ="";
+
   // Set PureCloud settings
   client.setEnvironment('mypurecloud.com');
   // Cache purecloud credentials to browser
@@ -102,16 +105,19 @@
     name.add(option);
     showDropdown();
   }
+
   function showDropdown() {
     let divShow = document.getElementById("divFlow");
     divShow.style.display = "block";
   }
+
   function changeOptions() {
     let flows = document.getElementById("flowNames");
     let value = flows.options[flows.selectedIndex].value;
     let flowInfoFlowType = "inboundcall";
     getConfiguration(value)
   }
+
   function getConfiguration(value) {
     let flowId = value; // String | Flow ID
     let opts = {
@@ -120,24 +126,25 @@
     architectApi.getFlowLatestconfiguration(flowId, opts)
       .then((flowLatestConfig) => {
         let InitialSequenceId = flowLatestConfig.initialSequence
-         // Clear divDisplay
+        // Clear divDisplay
         displayDiv.innerHTML = "";
         divDisplay.style.display = "block";
-        let greeting 
-        // initialGreeting = flowLatestConfig.initialPrompts.defaultAudio.uiMetaData.sequenceItems[0].parameter
-       
-        if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('ToAudioTTS')) {
-          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio.config.ToAudioTTS.operands[0].lit.text);
-        } else if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('AudioPlaybackOptions')) {     
-          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio.config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);  
-        } 
+        let greeting
 
-        let flowSequence = flowLatestConfig.flowSequenceItemList;
+        // if ToAudioTTS if found in the Json file, Main menu is not available. ToAudioTTS, is where the initial audio will be found. 
+        if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('ToAudioTTS')) {
+          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio
+            .config.ToAudioTTS.operands[0].lit.text);
+          // If main menu is available the initial greeting is in AudioPlaybackOptions
+        } else if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('AudioPlaybackOptions')) {
+          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio
+            .config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);
+        }
+        flowSequence = flowLatestConfig.flowSequenceItemList;
         displayDiv.appendChild(greeting);
         displayDiv.innerHTML += "<br>"
-
         try {
-          gotoNextSequence(flowSequence, InitialSequenceId);
+          gotoNextSequence(InitialSequenceId);
         } catch (err) {
           console.log(err);
           noMenu()
@@ -148,17 +155,23 @@
         console.error(err);
       });
   }
-   
-  function gotoNextSequence(flowSequence, sequenceId) {
 
+  // Function to display and determine if first sequence is menu or task
+  function gotoNextSequence(sequenceId) {
+    
+    // console.log("Flow Sequence:" + JSON.stringify(flowSequence));
+    console.log("SequenceId:" + sequenceId);
+
+    // find the flowsequence with sequenceid in JSON
     let initialSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === sequenceId);
     // get initialSequence type-- if Menu or Task
     let InitialMenuType = initialSequence.__type;
-
-    if (InitialMenuType === "Menu") { 
+    console.log("Initial menu type" + InitialMenuType);
+    if (InitialMenuType === "Menu") {
       // Display menu prompt
       displayDiv.innerHTML += "<br>"
-      let prompt = document.createTextNode("Menu Prompt: " + initialSequence.prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter);
+      let prompt = document.createTextNode("Menu Prompt: " + initialSequence.prompts.defaultAudio.uiMetaData
+        .sequenceItems[0].parameter);
       displayDiv.appendChild(prompt);
       displayDiv.innerHTML += "<br>"
       let createInput = document.createElement("input");
@@ -166,81 +179,160 @@
       createInput.setAttribute("id", sequenceId);
       createInput.onchange = function () {
         console.log(document.getElementById(sequenceId).value)
-        
+
         filterInput(document.getElementById(sequenceId).value, initialSequence, flowSequence)
-      } 
+      }
     } else if (InitialMenuType === "Task") {
-      findTask(flowSequence, sequenceId)
+      findTask(sequenceId);
     }
   }
-  
+
   // FUNCTIONS FOR TASK -----------------------------------------------------------------------------------------------------------------------------------------------------  
-  // find task in flowSequenceItemList
-  function findTask(flowSequence, nextSequenceId) {  
-    console.log("Im here find task!!!")
-    console.log(nextSequenceId);
-    console.log(flowSequence);
+  // find task in flowSequenceItemList and 
+  function findTask(nextSequenceId) {
+    // find which sequence is the task in flowsequenceitem
     let taskSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === nextSequenceId);
     let startActionId = taskSequence.startAction;
-    
-    console.log(taskSequence);
-    console.log(taskSequence.startAction);
+
     let taskName = taskSequence.name;
     let actionList = taskSequence.actionList;
-    
+
     let taskTitle = document.createTextNode("Task Name: " + taskName);
     let startText = document.createTextNode("Start");
-    displayDiv.innerHTML += "<br>"  
+    displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(startText);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(taskTitle);
-
-    // find the next task in actionList
+    // find the next task in actionList with the startAction id
     nextTaskInActionList(actionList, startActionId)
-  } 
-
-  // function to find the next task type
+  }
+  // identify what is the task type and transfer to the function
   function nextTaskInActionList(actionList, actionId) {
-    for (i=0; i < actionList.length; i++) {
-      if (actionId === actionList[i].id) {
-        let actionType = actionList[i].__type
+    for (let action of actionList) {
+      if (actionId === action.id) {
+        let actionType = action.__type
         console.log(actionId);
         console.log(actionType);
         switch (actionType) {
-        case "PlayAudioAction":
-          playAudioAction(actionList,actionList[i])
-          break;
-        case "TransferPureMatchAction":
-          transferToACDAction(actionList,actionList[i])
-          break;
-        case "CollectInputAction":
-          inputValueAction(actionList, actionList[i])
-          break;  
-        case "DisconnectAction":
-          disconnectAction(actionList[i])
-          break;     
+          case "PlayAudioAction":
+            playAudioAction(actionList, action)
+            break;
+          case "TransferUserAction":
+            transferToUserAction(actionList, action)
+            break;
+          case "TransferExternalAction":
+            transferToExtNumberAction(actionList, action)
+            break;
+          case "TransferPureMatchAction":
+            transferToACDAction(actionList, action)
+            break;
+          case "CollectInputAction":
+            inputValueAction(actionList, action)
+            break;
+          case "TransferGroupAction":
+            transferToGroupAction(actionList, action)
+            break;
+          case "TransferFlowAction":
+            transferToFlowAction(actionList, action)
+            break;
+          case "TransferVoicemailAction":
+            transferToVoicemailAction(actionList, action)
+            break;
+          case "TransferMenuAction":
+          gotoNextSequence(action.menuReference);
+            break;
+          case "DecisionAction":
+            decisionAction(actionList, action)
+            break;
+          case "DisconnectAction":
+            disconnectAction(action)
+            break;
         }
       }
     }
   }
-  
-  function playAudioAction(actionList, action) {  
+  // function to play audio
+  function playAudioAction(actionList, action) {
     let nextActionId = action.nextAction;
-
     let actionTitle = document.createTextNode("Action name: " + action.name);
-    let playAudio = document.createTextNode("Audio: " + action.prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter); 
+    let playAudio = document.createTextNode("Audio: " + action.prompts.defaultAudio.uiMetaData.sequenceItems[0]
+      .parameter);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(actionTitle);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(playAudio);
-    nextTaskInActionList(actionList, nextActionId)  
+    // find the next task in actionList with the startAction id
+    nextTaskInActionList(actionList, nextActionId)
+  }
+  // function to transfer to queue
+  function transferToACDAction(actionList, action) {
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("Queue: " + action.queues[0].text);
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
+    }
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    // find the next task in actionList with the startAction id
+    nextTaskInActionList(actionList, nextActionId);
+  }
+  // function to transfer to to a user
+  function transferToUserAction(actionList, action) {
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("User: " + action.user.text);
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
+    }
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    // find the next task in actionList with the startAction id
+    nextTaskInActionList(actionList, nextActionId);
+  }
+  // function to transfer to a number
+  function transferToExtNumberAction(actionList, action) {
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("External Number: " + action.externalNumber.text);
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
+    }
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    // find the next task in actionList with the startAction id
+    nextTaskInActionList(actionList, nextActionId);
   }
 
-  function transferToACDAction(actionList, action) {  
-    let nextActionId = action.nextAction;
+  function transferToGroupAction(actionList, action) {
 
+    let nextActionId = action.nextAction;
     let actionTitle = document.createTextNode("Action name: " + action.name);
-    let queueAudio = document.createTextNode("Queue: " + action.queues[0].text); 
+    let queueAudio = document.createTextNode("Group: " + action.group.text);
     let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;;
     let preTransfer = ""
     displayDiv.innerHTML += "<br>"
@@ -256,22 +348,72 @@
     displayDiv.appendChild(preTransfer);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(queueAudio);
-    nextTaskInActionList(actionList, nextActionId);    
+    nextTaskInActionList(actionList, nextActionId);
+
+  }
+
+  function transferToFlowAction(actionList, action) {
+
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("Flow: " + action.flowName);
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+    }
+
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    nextTaskInActionList(actionList, nextActionId);
+
+  }
+
+  function transferToVoicemailAction(actionList, action) {
+
+    console.log("Action List" + actionList);
+    console.log("Action" + JSON.stringify(action));
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    let queueAudio = document.createTextNode("User: " + action.transferTarget.text);
+    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;;
+    let preTransfer = ""
+    displayDiv.innerHTML += "<br>"
+
+    if (preTransferAudio == "") {
+      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
+    } else {
+      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+    }
+
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(preTransfer);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(queueAudio);
+    nextTaskInActionList(actionList, nextActionId);
+
   }
 
   function inputValueAction(actionList, action) {
-    let nextActionIdSuccess = action.paths.find(findSuccess => findSuccess.label === 'Success').nextActionId;
-    let nextActionIdFailure = action.paths.find(findSuccess => findSuccess.label === 'Failure').nextActionId;
+    let nextActionIdSuccess = action.paths.find(findSuccess => findSuccess.outputId === '__SUCCESS__').nextActionId;
+    let nextActionIdFailure = action.paths.find(findSuccess => findSuccess.outputId === '__FAILURE__').nextActionId;
     let nextActionId = action.nextAction;
     let actionTitle = document.createTextNode("Action name: " + action.name);
     let preTransferAudio = action.prompts.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
     displayDiv.innerHTML += "<br>"
-
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("");
     } else {
-      preTransfer = document.createTextNode("Pre Transfer Audio:" + preTransferAudio);
+      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
     }
     displayDiv.appendChild(actionTitle);
     displayDiv.innerHTML += "<br>"
@@ -280,54 +422,86 @@
     let inputId = action.id;
     let createInput = document.createElement("input");
     displayDiv.appendChild(createInput);
-    createInput.setAttribute("id", inputId);    
-    
-    createInput.onchange = function () {
+    createInput.setAttribute("id", inputId);
 
+    createInput.onchange = function () {
       let userInput = document.getElementById(inputId).value
       let maxDigit = action.numberOfDigitsMax.text
       let minDigit = action.numberOfDigitsMin.text
-      if ((userInput <= maxDigit)&&(userInput >= minDigit)) {
-        inputValue = document.createTextNode("Input Value: " + userInput);
-        displayDiv.appendChild(inputValue);
-        displayDiv.innerHTML += "<br>"
-        nextTaskInActionList(actionList, nextActionIdSuccess);
-        nextTaskInActionList(actionList, nextActionId);
+      displayDiv.innerHTML += "<br>"
+      if ((userInput <= maxDigit) && (userInput >= minDigit)) {
+        whichActionId = nextActionIdSuccess;
       } else {
-        nextTaskInActionList(actionList, nextActionIdFailure);
-      }      
+        whichActionId = nextActionIdFailure;
+      }
+      inputValue = document.createTextNode("Input Value: " + userInput);
+      displayDiv.appendChild(inputValue);
+      // go to next task when success/failure
+      nextTaskInActionList(actionList, whichActionId);
+      // find the next task in actionList with the startAction id
+      nextTaskInActionList(actionList, nextActionId);
     }
-    
+  }
+  // decision function, determines expression (true or false) and expressions with conditional statements.
+  function decisionAction(actionList, action) {
+    // initial nextaction value. 
+    let nextActionIdSuccess = action.paths.find(findSuccess => findSuccess.outputId === '__YES__').nextActionId;
+    let nextActionIdFailure = action.paths.find(findSuccess => findSuccess.outputId === '__NO__').nextActionId;
+    // next action after the Yes or No path has been completed
+    let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    let expressionValue = action.expression.text;
+    // console.log(eval(expressionValue));
+    if (eval(expressionValue)) {
+      whichActionId = nextActionIdSuccess
+      whichAction = 'Yes'
+    } else {
+      whichActionId = nextActionIdFailure
+      whichAction = 'No'
+    }
+    decisionValue = document.createTextNode("Decision: " + whichAction);
+    displayDiv.appendChild(decisionValue);
+    // go to next task when Yes/no
+    nextTaskInActionList(actionList, whichActionId);
+    // find the next task in actionList with the startAction id
+    nextTaskInActionList(actionList, nextActionId);
   }
 
-  function disconnectAction(action) {  
+  //  disconnect function
+  function disconnectAction(action) {
     let actionTitle = document.createTextNode("Action name: " + action.name);
-    let discPrompt = document.createTextNode("Task Disconneted..");
+    let discPrompt = document.createTextNode("Task Disconnected..");
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(actionTitle);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(discPrompt);
   }
-  
+
   // END FUNCTIONS FOR TASK -------------------------------------------------------------------------------------------------------------------------------------------------
-  
-  function filterInput(inputValue, initialSequence, flowSequence) {
+
+  function filterInput(inputValue, initialSequence) {
     let storeFlow = initialSequence.menuChoiceList;
     for (let dtmf of storeFlow) {
       if (inputValue == dtmf.digit) {
         let task = dtmf.action.__type
-        determineTask(task, dtmf, flowSequence);
+        determineTask(task, dtmf);
       }
     }
   }
 
-  function determineTask(task, dtmf, flowSequence) {
+  function determineTask(task, dtmf) {
     switch (task) {
       case "TransferUserAction":
         transferToUser(task, dtmf)
         break;
       case "TransferGroupAction":
         transferToGroup(task, dtmf)
+        break;
+      case "TransferFlowAction":
+        transferToFlow(task, dtmf)
         break;
       case "TransferExternalAction":
         transferToNumber(task, dtmf)
@@ -340,16 +514,17 @@
         break;
       case "TaskAction":
         // go to findTask to find Task in flowSequenceItemList
-        findTask(flowSequence, dtmf.action.taskReference)
+        findTask(dtmf.action.taskReference)
         break;
-      case "MenuAction": 
-        gotoNextSequence(flowSequence, dtmf.action.menuReference);
+      case "MenuAction":
+        gotoNextSequence(dtmf.action.menuReference);
         break;
       case "DisconnectAction":
         disconnect()
-        break;      
+        break;
     }
   }
+
   function transferToUser(task, dtmf) {
     let userName = dtmf.action.user.config.lit.text;
     let transferComplete = document.createTextNode("Transfer to user complete");
@@ -368,8 +543,9 @@
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(transferComplete);
   }
+
   function transferToGroup(task, dtmf) {
-    let groupName = dtmf.action._group.text;
+    let groupName = dtmf.action.group.text;
     let transferComplete = document.createTextNode("Transfer to group complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
@@ -386,13 +562,14 @@
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(transferComplete);
   }
-  function transferToNumber (task, dtmf) {  
+
+  function transferToNumber(task, dtmf) {
     let number = dtmf.action.externalNumber.text;
     let transferComplete = document.createTextNode("Transfer to number complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
     displayDiv.innerHTML += "<br>"
-    
+
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to Number... ");
     } else {
@@ -405,14 +582,15 @@
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(transferComplete);
   }
-  function transferToACD (task, dtmf) {
-    
+
+  function transferToACD(task, dtmf) {
+
     let queue = dtmf.action.queues[0].text;
     let transferComplete = document.createTextNode("Transfer to ACD Complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
     displayDiv.innerHTML += "<br>"
-    
+
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
     } else {
@@ -425,13 +603,14 @@
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(transferComplete);
   }
+
   function transferToVoiceMail(task, dtmf) {
     let vmOwner = dtmf.action.transferTarget.text;
     let transferComplete = document.createTextNode("Transfer to Voice Mail complete");
     let preTransferAudio = dtmf.action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
     let preTransfer = ""
     displayDiv.innerHTML += "<br>"
-    
+
     if (preTransferAudio == "") {
       preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to " + vmOwner + " voice mail");
     } else {
@@ -444,11 +623,13 @@
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(transferComplete);
   }
+
   function disconnect() {
     displayDiv.innerHTML += "<br>"
-    let disconnectPrompt= document.createTextNode("Disconnected..");
+    let disconnectPrompt = document.createTextNode("Disconnected..");
     displayDiv.appendChild(disconnectPrompt);
   }
+
   function noMenu() {
     alert("This flow is not compatible for conversion. Please select another flow")
     displayDiv.innerHTML = "";
