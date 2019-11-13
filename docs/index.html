@@ -129,19 +129,7 @@
         // Clear divDisplay
         displayDiv.innerHTML = "";
         divDisplay.style.display = "block";
-<<<<<<< HEAD
         let greeting
-=======
-        let greeting 
-       
-        // if ToAudioTTS if found in the Json file, Main menu is not available. ToAudioTTS, is where the initial audio will be found. 
-        if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('ToAudioTTS')) {
-          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio.config.ToAudioTTS.operands[0].lit.text);
-        // If main menu is available the initial greeting is in AudioPlaybackOptions
-        } else if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('AudioPlaybackOptions')) {     
-          greeting = document.createTextNode("Initial Greeting: " + flowLatestConfig.initialPrompts.defaultAudio.config.AudioPlaybackOptions.operands[0].ToAudioTTS.operands[0].lit.text);  
-        } 
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
 
         // if ToAudioTTS if found in the Json file, Main menu is not available. ToAudioTTS, is where the initial audio will be found. 
         if (flowLatestConfig.initialPrompts.defaultAudio.config.hasOwnProperty('ToAudioTTS')) {
@@ -167,7 +155,6 @@
         console.error(err);
       });
   }
-<<<<<<< HEAD
 
   // Function to display and determine if first sequence is menu or task
   function gotoNextSequence(sequenceId) {
@@ -175,21 +162,12 @@
     // console.log("Flow Sequence:" + JSON.stringify(flowSequence));
     console.log("SequenceId:" + sequenceId);
 
-=======
-  
-  // Function to display and determine if first sequence is menu or task
-  function gotoNextSequence(flowSequence, sequenceId) {
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
     // find the flowsequence with sequenceid in JSON
     let initialSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === sequenceId);
     // get initialSequence type-- if Menu or Task
     let InitialMenuType = initialSequence.__type;
     console.log("Initial menu type" + InitialMenuType);
-<<<<<<< HEAD
     if (InitialMenuType === "Menu") {
-=======
-    if (InitialMenuType === "Menu") { 
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
       // Display menu prompt
       displayDiv.innerHTML += "<br>"
       let prompt = document.createTextNode("Menu Prompt: " + initialSequence.prompts.defaultAudio.uiMetaData
@@ -205,29 +183,17 @@
         filterInput(document.getElementById(sequenceId).value, initialSequence, flowSequence)
       }
     } else if (InitialMenuType === "Task") {
-<<<<<<< HEAD
       findTask(sequenceId);
-=======
-      findTask(flowSequence, sequenceId);
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
     }
   }
 
   // FUNCTIONS FOR TASK -----------------------------------------------------------------------------------------------------------------------------------------------------  
   // find task in flowSequenceItemList and 
-<<<<<<< HEAD
   function findTask(nextSequenceId) {
     // find which sequence is the task in flowsequenceitem
     let taskSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === nextSequenceId);
     let startActionId = taskSequence.startAction;
 
-=======
-  function findTask(flowSequence, nextSequenceId) {  
-    // find which sequence is the task in flowsequenceitem
-    let taskSequence = flowSequence.find(flowSequenceItem => flowSequenceItem.id === nextSequenceId);
-    let startActionId = taskSequence.startAction;
-    
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
     let taskName = taskSequence.name;
     let actionList = taskSequence.actionList;
 
@@ -237,22 +203,13 @@
     displayDiv.appendChild(startText);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(taskTitle);
-<<<<<<< HEAD
     // find the next task in actionList with the startAction id
     nextTaskInActionList(actionList, startActionId)
   }
-=======
-
-    // find the next task in actionList with the startAction id
-    nextTaskInActionList(actionList, startActionId)
-  } 
-
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
   // identify what is the task type and transfer to the function
   function nextTaskInActionList(actionList, actionId) {
     for (let action of actionList) {
       if (actionId === action.id) {
-<<<<<<< HEAD
         let actionType = action.__type
         console.log(actionId);
         console.log(actionType);
@@ -290,43 +247,12 @@
           case "DisconnectAction":
             disconnectAction(action)
             break;
-=======
-      let actionType = action.__type
-      console.log(actionId);
-      console.log(actionType);
-      switch (actionType) {
-        case "PlayAudioAction":
-          playAudioAction(actionList,action)
-          break;
-        case "TransferUserAction":
-          transferToUserAction(actionList,action)
-          break;
-        case "TransferExternalAction":
-          transferToExtNumberAction(actionList,action)
-          break;
-        case "TransferPureMatchAction":
-          transferToACDAction(actionList,action)
-          break;
-        case "CollectInputAction":
-          inputValueAction(actionList,action)
-          break;  
-        case "DecisionAction":
-          decisionAction(actionList,action)
-          break; 
-        case "DisconnectAction":
-          disconnectAction(action)
-          break;     
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
         }
       }
     }
   }
   // function to play audio
-<<<<<<< HEAD
   function playAudioAction(actionList, action) {
-=======
-  function playAudioAction(actionList, action) {  
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
     let nextActionId = action.nextAction;
     let actionTitle = document.createTextNode("Action name: " + action.name);
     let playAudio = document.createTextNode("Audio: " + action.prompts.defaultAudio.uiMetaData.sequenceItems[0]
@@ -336,7 +262,6 @@
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(playAudio);
     // find the next task in actionList with the startAction id
-<<<<<<< HEAD
     nextTaskInActionList(actionList, nextActionId)
   }
   // function to transfer to queue
@@ -405,12 +330,6 @@
 
   function transferToGroupAction(actionList, action) {
 
-=======
-    nextTaskInActionList(actionList, nextActionId)  
-  }
-  // function to transfer to queue
-  function transferToACDAction(actionList, action) {  
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
     let nextActionId = action.nextAction;
     let actionTitle = document.createTextNode("Action name: " + action.name);
     let queueAudio = document.createTextNode("Group: " + action.group.text);
@@ -479,61 +398,8 @@
     displayDiv.appendChild(preTransfer);
     displayDiv.innerHTML += "<br>"
     displayDiv.appendChild(queueAudio);
-<<<<<<< HEAD
     nextTaskInActionList(actionList, nextActionId);
 
-=======
-    // find the next task in actionList with the startAction id
-    nextTaskInActionList(actionList, nextActionId);    
-  }
-  // function to transfer to to a user
-  function transferToUserAction(actionList, action) {  
-    let nextActionId = action.nextAction;
-
-    let actionTitle = document.createTextNode("Action name: " + action.name);
-    let queueAudio = document.createTextNode("User: " + action.user.text); 
-    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
-    let preTransfer = ""
-    displayDiv.innerHTML += "<br>"
-
-    if (preTransferAudio == "") {
-      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
-    } else {
-      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
-    }
-
-    displayDiv.appendChild(actionTitle);
-    displayDiv.innerHTML += "<br>"
-    displayDiv.appendChild(preTransfer);
-    displayDiv.innerHTML += "<br>"
-    displayDiv.appendChild(queueAudio);
-    // find the next task in actionList with the startAction id
-    nextTaskInActionList(actionList, nextActionId);    
-  }
-  // function to transfer to a number
-  function transferToExtNumberAction(actionList, action) {  
-    let nextActionId = action.nextAction;
-
-    let actionTitle = document.createTextNode("Action name: " + action.name);
-    let queueAudio = document.createTextNode("External Number: " + action.externalNumber.text); 
-    let preTransferAudio = action.preTransferAudio.defaultAudio.uiMetaData.sequenceItems[0].parameter;
-    let preTransfer = ""
-    displayDiv.innerHTML += "<br>"
-
-    if (preTransferAudio == "") {
-      preTransfer = document.createTextNode("Pre Transfer Audio: Transferring to queue... ");
-    } else {
-      preTransfer = document.createTextNode("Pre Transfer Audio: " + preTransferAudio);
-    }
-
-    displayDiv.appendChild(actionTitle);
-    displayDiv.innerHTML += "<br>"
-    displayDiv.appendChild(preTransfer);
-    displayDiv.innerHTML += "<br>"
-    displayDiv.appendChild(queueAudio);
-    // find the next task in actionList with the startAction id
-    nextTaskInActionList(actionList, nextActionId);    
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
   }
 
   function inputValueAction(actionList, action) {
@@ -563,26 +429,17 @@
       let maxDigit = action.numberOfDigitsMax.text
       let minDigit = action.numberOfDigitsMin.text
       displayDiv.innerHTML += "<br>"
-<<<<<<< HEAD
       if ((userInput <= maxDigit) && (userInput >= minDigit)) {
-=======
-      if ((userInput <= maxDigit)&&(userInput >= minDigit)) {
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
         whichActionId = nextActionIdSuccess;
       } else {
         whichActionId = nextActionIdFailure;
       }
       inputValue = document.createTextNode("Input Value: " + userInput);
       displayDiv.appendChild(inputValue);
-<<<<<<< HEAD
-=======
-
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
       // go to next task when success/failure
       nextTaskInActionList(actionList, whichActionId);
       // find the next task in actionList with the startAction id
       nextTaskInActionList(actionList, nextActionId);
-<<<<<<< HEAD
     }
   }
   // decision function, determines expression (true or false) and expressions with conditional statements.
@@ -611,48 +468,37 @@
     nextTaskInActionList(actionList, whichActionId);
     // find the next task in actionList with the startAction id
     nextTaskInActionList(actionList, nextActionId);
-=======
-    }    
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
   }
   // decision function, determines expression (true or false) and expressions with conditional statements.
   function decisionAction(actionList, action) {
     // initial nextaction value. 
     let nextActionIdSuccess = action.paths.find(findSuccess => findSuccess.outputId === '__YES__').nextActionId;
     let nextActionIdFailure = action.paths.find(findSuccess => findSuccess.outputId === '__NO__').nextActionId;
-
     // next action after the Yes or No path has been completed
     let nextActionId = action.nextAction;
+    let actionTitle = document.createTextNode("Action name: " + action.name);
+    displayDiv.innerHTML += "<br>"
+    displayDiv.appendChild(actionTitle);
+    displayDiv.innerHTML += "<br>"
+    let expressionValue = action.expression.text;
+    // console.log(eval(expressionValue));
+    if (eval(expressionValue)) {
+      whichActionId = nextActionIdSuccess
+      whichAction = 'Yes'
+    } else {
+      whichActionId = nextActionIdFailure
+      whichAction = 'No'
+    }
+    decisionValue = document.createTextNode("Decision: " + whichAction);
+    displayDiv.appendChild(decisionValue);
+    // go to next task when Yes/no
+    nextTaskInActionList(actionList, whichActionId);
+    // find the next task in actionList with the startAction id
+    nextTaskInActionList(actionList, nextActionId);
+  }
 
-<<<<<<< HEAD
   //  disconnect function
   function disconnectAction(action) {
-=======
-    let actionTitle = document.createTextNode("Action name: " + action.name);
-    displayDiv.innerHTML += "<br>"
-
-    displayDiv.appendChild(actionTitle);
-    displayDiv.innerHTML += "<br>"
-    let expressionValue = action.expression.text;
-    // console.log(eval(expressionValue));
-    if (eval(expressionValue)) {
-      whichActionId = nextActionIdSuccess
-      whichAction = 'Yes'
-    } else {
-      whichActionId = nextActionIdFailure
-      whichAction = 'No'
-    }
-    decisionValue = document.createTextNode("Decision: " + whichAction);
-    displayDiv.appendChild(decisionValue);
-    // go to next task when Yes/no
-    nextTaskInActionList(actionList, whichActionId);
-    // find the next task in actionList with the startAction id
-    nextTaskInActionList(actionList, nextActionId);
-  }    
-  
-  //  disconnect function
-  function disconnectAction(action) {  
->>>>>>> e0eb698bab84d103983cb5f197cd362a1c7ceb39
     let actionTitle = document.createTextNode("Action name: " + action.name);
     let discPrompt = document.createTextNode("Task Disconnected..");
     displayDiv.innerHTML += "<br>"
